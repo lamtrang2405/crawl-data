@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppMagic Crawler</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0d0d12 0%, #1a1a24 100%);
+      color: #e8e8ec;
+      margin: 0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; color: #e84393; margin-bottom: 0.25rem; }
+    .sub { font-size: 0.9rem; color: #888; margin-bottom: 1rem; }
+    .input-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    input[type="url"] {
+      flex: 1; padding: 0.75rem 1rem; border: 1px solid rgba(232,67,147,0.3);
+      border-radius: 8px; background: #1a1a1f; color: #fff; font-size: 0.95rem;
+    }
+    input[type="url"]:focus { outline: none; border-color: #e84393; box-shadow: 0 0 0 2px rgba(232,67,147,0.2); }
+    button {
+      padding: 0.75rem 1.5rem; background: #e84393; color: #fff; border: none; border-radius: 8px;
+      font-weight: 600; cursor: pointer; font-size: 0.95rem; white-space: nowrap;
+    }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .filters { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: #1a1a1f; border: 1px solid rgba(232,67,147,0.2); border-radius: 8px; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .filter-group label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+    .filter-group select { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: #0d0d12; color: #e8e8ec; font-size: 0.9rem; min-width: 140px; }
+    .meta-badge { font-size: 0.8rem; color: #888; background: #252530; padding: 0.25rem 0.5rem; border-radius: 4px; margin-top: 0.5rem; }
+    .status { font-size: 0.9rem; color: #888; margin-bottom: 1rem; min-height: 1.2em; }
+    .error { color: #ff6b6b; }
+    .note { font-size: 0.85rem; color: #666; margin-bottom: 1rem; padding: 0.5rem; background: #1a1a1f; border-radius: 6px; }
+    .results { display: none; }
+    .results.visible { display: block; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: #1a1a1f; border: 1px solid rgba(232,67,147,0.2); border-radius: 10px; padding: 1rem 1.25rem; }
+    .panel h2 { font-size: 1rem; color: #e84393; margin: 0 0 0.75rem; }
+    #topFreePanel, #topGrossingPanel { max-height: 70vh; overflow-y: auto; }
+    .row { display: grid; grid-template-columns: 36px 1fr 100px; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.9rem; }
+    .row .rank { color: #888; font-weight: 600; }
+    .row .metric { color: #888; font-size: 0.8rem; text-align: right; }
+    .screenshot { max-width: 100%; border-radius: 8px; margin-top: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button { background: #333; }
+    .actions button.primary { background: #e84393; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AppMagic Crawler</h1>
+    <p class="sub"><strong>No server:</strong> Use the <a href="appmagic_bookmarklet.html" style="color:#e84393">bookmarklet</a> — go to AppMagic, click it, get data. Or load a JSON file below.</p>
+    <p class="note">With Python server: run <code>python appmagic_crawler_web.py</code> to enable the Crawl button for automated fetching.</p>
+
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://appmagic.rocks/top-charts/apps?tag=37" value="https://appmagic.rocks/top-charts/apps?tag=37">
+      <button id="crawlBtn">Crawl (server)</button>
+      <button id="demoBtn" style="background:#333">Load Demo</button>
+      <button id="loadFileBtn" style="background:#333">Load from file</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+    </div>
+    <div class="filters">
+      <div class="filter-group">
+        <label>Time Period</label>
+        <select id="aggregation">
+          <option value="day">Day</option><option value="week">Week</option><option value="month">Month</option>
+          <option value="quarter" selected>Quarter</option><option value="year">Year</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Country</label>
+        <select id="country">
+          <option value="W1">Worldwide</option><option value="US,W1">US + Worldwide</option><option value="US">United States</option>
+          <option value="GB">United Kingdom</option><option value="DE">Germany</option><option value="FR">France</option>
+          <option value="JP">Japan</option><option value="CN">China</option><option value="KR">South Korea</option>
+          <option value="IN">India</option><option value="BR">Brazil</option><option value="CA">Canada</option>
+          <option value="AU">Australia</option><option value="RU">Russia</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Store</label>
+        <select id="store">
+          <option value="">All Stores</option><option value="1">Android (Google Play)</option><option value="4" selected>iOS (App Store)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Results per chart</label>
+        <select id="limit">
+          <option value="20">20</option><option value="50">50</option><option value="100">100</option>
+          <option value="200">200</option><option value="500" selected>500</option><option value="1000">1000</option>
+        </select>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="results" id="results">
+      <div id="metaBadge" class="meta-badge" style="display:none;"></div>
+      <div class="grid">
+        <div class="panel" id="topFreePanel">
+          <h2>Top Free (Downloads)</h2>
+          <div id="topFree"></div>
+        </div>
+        <div class="panel" id="topGrossingPanel">
+          <h2>Top Grossing (Revenue)</h2>
+          <div id="topGrossing"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top: 1rem;">
+        <h2>Screenshot</h2>
+        <img id="screenshot" class="screenshot" alt="Screenshot" style="display:none;">
+      </div>
+      <div class="actions">
+        <button class="primary" id="exportJson">Export JSON</button>
+        <button id="exportCsv">Export CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://127.0.0.1:5000';
+    const DEMO = {"meta":{"source":"https://appmagic.rocks/top-charts/apps","crawled_at":"2025-02-26"},"top_free_downloads":[{"rank":1,"app":"ChatGPT","publisher":"OpenAI OpCo, LLC","metric":">50,000,000"},{"rank":2,"app":"TikTok - Videos, Shop & LIVE","publisher":"Bytedance","metric":">20,000,000"},{"rank":3,"app":"Instagram","publisher":"Instagram (Meta)","metric":">20,000,000"},{"rank":4,"app":"Google Gemini","publisher":"Google","metric":">20,000,000"},{"rank":5,"app":"Facebook","publisher":"Meta Platforms, Inc.","metric":">20,000,000"},{"rank":6,"app":"FreeReels - Dramas & Reels","publisher":"SKYWORK AI PTE.LTD.","metric":">20,000,000"},{"rank":7,"app":"CapCut: Photo & Video Editor","publisher":"Bytedance","metric":">20,000,000"},{"rank":8,"app":"WhatsApp Messenger","publisher":"WhatsApp LLC (Meta)","metric":">20,000,000"},{"rank":9,"app":"Cici - Your helpful friend","publisher":"Bytedance","metric":">20,000,000"},{"rank":10,"app":"Block Blast!","publisher":"HungryStudio","metric":">20,000,000"}],"top_grossing_revenue":[{"rank":1,"app":"TikTok - Videos, Shop & LIVE","publisher":"Bytedance","metric":">$200,000,000"},{"rank":2,"app":"ChatGPT","publisher":"OpenAI OpCo, LLC","metric":">$200,000,000"},{"rank":3,"app":"Google One","publisher":"Google","metric":">$100,000,000"},{"rank":4,"app":"YouTube","publisher":"Google","metric":">$100,000,000"},{"rank":5,"app":"Last War:Survival","publisher":"FUNFLY PTE. LTD.","metric":">$100,000,000"},{"rank":6,"app":"Honor of Kings","publisher":"Tencent","metric":">$100,000,000"},{"rank":7,"app":"PUBG MOBILE","publisher":"Tencent","metric":">$100,000,000"},{"rank":8,"app":"Royal Match","publisher":"Dream Games","metric":">$50,000,000"},{"rank":9,"app":"Whiteout Survival","publisher":"Century Games","metric":">$50,000,000"},{"rank":10,"app":"Roblox","publisher":"Roblox Corporation","metric":">$50,000,000"}]};
+
+    const urlInput=document.getElementById('urlInput'),crawlBtn=document.getElementById('crawlBtn'),demoBtn=document.getElementById('demoBtn'),loadFileBtn=document.getElementById('loadFileBtn'),fileInput=document.getElementById('fileInput');
+    const status=document.getElementById('status'),results=document.getElementById('results'),metaBadge=document.getElementById('metaBadge');
+    const aggregationEl=document.getElementById('aggregation'),countryEl=document.getElementById('country'),storeEl=document.getElementById('store');
+    const limitEl=document.getElementById('limit');
+    let lastData=null;
+
+    function buildCrawlUrl(){
+      let url=urlInput.value.trim();
+      if(!url||!url.includes('appmagic.rocks')||!url.includes('top-charts'))return null;
+      try{const u=new URL(url);u.searchParams.set('aggregation',aggregationEl.value||'month');u.searchParams.set('country',countryEl.value||'W1');
+      if(storeEl.value)u.searchParams.set('store',storeEl.value);return u.toString();}catch{return url;}
+    }
+    function parseUrlAndApplyFilters(){
+      const url=urlInput.value.trim();if(!url)return;
+      try{const u=new URL(url);const agg=u.searchParams.get('aggregation');if(agg)aggregationEl.value=agg;
+      const c=u.searchParams.get('country');if(c)countryEl.value=c.trim();const s=u.searchParams.get('store');if(s)storeEl.value=s;else storeEl.value='';}catch(_){}
+    }
+    urlInput.addEventListener('blur',parseUrlAndApplyFilters);
+
+    function render(data){
+      const renderList=(el,items)=>{el.innerHTML=(items||[]).map(r=>`<div class="row"><span class="rank">${r.rank}</span><span>${(r.app||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span><span class="metric">${(r.metric||'').replace(/&/g,'&amp;')}</span></div>`).join('');};
+      renderList(document.getElementById('topFree'),data.top_free_downloads);
+      renderList(document.getElementById('topGrossing'),data.top_grossing_revenue);
+      const ss=document.getElementById('screenshot');
+      if(data.meta?.screenshot){ss.src=API+'/screenshot/'+encodeURIComponent(data.meta.screenshot);ss.style.display='block';}
+      else ss.style.display='none';
+    }
+
+    demoBtn.onclick=()=>{lastData=DEMO;render(DEMO);results.classList.add('visible');metaBadge.textContent='Demo data · Sample top charts';metaBadge.style.display='block';status.textContent='Loaded 20 sample apps.';status.classList.remove('error');};
+    loadFileBtn.onclick=()=>fileInput.click();
+    fileInput.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);lastData=d;render(d);results.classList.add('visible');metaBadge.textContent='Loaded from file: '+f.name;metaBadge.style.display='block';status.textContent='Loaded '+(d.top_free_downloads?.length||0)+(d.top_grossing_revenue?.length||0)+' apps.';status.classList.remove('error');}catch(e){status.textContent='Invalid JSON: '+e.message;status.classList.add('error');}};r.readAsText(f);fileInput.value='';};
+
+    crawlBtn.onclick=async()=>{
+      const url=buildCrawlUrl();
+      if(!url){status.textContent='Please paste a valid AppMagic top-charts URL';status.classList.add('error');return;}
+      const agg=aggregationEl.options[aggregationEl.selectedIndex].text;
+      const country=countryEl.options[countryEl.selectedIndex].text;
+      const store=storeEl.options[storeEl.selectedIndex].text;
+      status.textContent='Crawling... '+agg+' · '+country+' · '+store+' (10–15 sec)';
+      status.classList.remove('error');crawlBtn.disabled=true;
+      try{
+        const res=await fetch(API+'/crawl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,limit:parseInt(limitEl.value,10)||500})});
+        const data=await res.json();
+        if(!res.ok)throw new Error(data.error||'Crawl failed');
+        lastData=data;render(data);results.classList.add('visible');
+        metaBadge.textContent='Time: '+agg+' · Country: '+country+' · Store: '+store;metaBadge.style.display='block';
+        status.textContent='Done. Fetched '+((data.top_free_downloads?.length||0)+(data.top_grossing_revenue?.length||0))+' apps.';
+        status.classList.remove('error');
+      }catch(e){
+        status.textContent='Error: '+e.message+'. Is the server running? Run: python appmagic_crawler_web.py';
+        status.classList.add('error');
+      }
+      crawlBtn.disabled=false;
+    };
+
+    document.getElementById('exportJson').onclick=()=>{
+      if(!lastData)return;
+      const a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(lastData,null,2));a.download='appmagic_crawled.json';a.click();
+    };
+    document.getElementById('exportCsv').onclick=()=>{
+      if(!lastData)return;
+      const rows=[...((lastData.top_free_downloads||[]).map(r=>['top_free_downloads',r.rank,r.app,r.publisher,(r.metric||'').replace(/\D/g,''),'downloads'])),...((lastData.top_grossing_revenue||[]).map(r=>['top_grossing_revenue',r.rank,r.app,r.publisher,(r.metric||'').replace(/\D/g,''),'revenue']))];
+      const csv='chart,rank,app,publisher,metric,metric_type\n'+rows.map(r=>r.join(',')).join('\n');
+      const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='appmagic_crawled.csv';a.click();
+    };
+
+    demoBtn.click();
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppMagic Crawler - No Server Needed</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d0d12; color: #e8e8ec; margin: 0; padding: 2rem; max-width: 640px; }
+    h1 { color: #e84393; font-size: 1.4rem; }
+    .step { background: #1a1a1f; padding: 1rem; margin: 1rem 0; border-radius: 8px; border: 1px solid rgba(232,67,147,0.2); }
+    .step h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .bookmarklet { display: inline-block; padding: 0.75rem 1.25rem; background: #e84393; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; cursor: grab; margin: 0.5rem 0; }
+    .bookmarklet:hover { filter: brightness(1.1); }
+    .hint { font-size: 0.85rem; color: #888; margin-top: 0.5rem; }
+    a { color: #e84393; }
+  </style>
+</head>
+<body>
+  <h1>AppMagic Crawler – No Server</h1>
+  <p>Extract top charts data directly from AppMagic in your browser. No Python, no backend.</p>
+
+  <div class="step">
+    <h3>Step 1: Add the bookmarklet</h3>
+    <p>Drag this link to your bookmarks bar:</p>
+    <a href="javascript:(function(){var d=document;var t=d.querySelectorAll('table');var r={top_free_downloads:[],top_grossing_revenue:[],meta:{source:location.href,crawled_at:new Date().toISOString().slice(0,10)}};t.forEach(function(tbl){var rows=tbl.querySelectorAll('tbody tr,tr');var sec=[];rows.forEach(function(row,i){var c=row.querySelectorAll('td,th');var txt=Array.from(c).map(function(x){return x.innerText.trim();}).filter(Boolean);if(txt.length>=2){var app=txt[1]||txt[0],pub=txt[2]||'',m=txt[txt.length-1]||'';if(app&&app.length>1)sec.push({rank:parseInt(txt[0],10)||i+1,app:app,publisher:pub,metric:m});}});if(sec.length>0){var fm=sec[0]&&sec[0].metric||'';if(fm.indexOf('$')>=0)r.top_grossing_revenue=sec;else r.top_free_downloads=sec;}});var n=(r.top_free_downloads.length||0)+(r.top_grossing_revenue.length||0);if(n===0){alert('No table data found. Make sure you are on appmagic.rocks/top-charts/ and the page has loaded.');return;}var html='<!DOCTYPE html><html><head><meta charset=utf-8><title>AppMagic Data</title><style>body{font-family:system-ui;background:#0d0d12;color:#e8e8ec;margin:0;padding:1.5rem}.c{max-width:960px;margin:0 auto}.p{background:#1a1a1f;border:1px solid rgba(232,67,147,.2);border-radius:10px;padding:1rem;margin:1rem 0}.p h2{color:#e84393;font-size:1rem}.r{display:grid;grid-template-columns:36px 1fr 100px;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.9rem}.r .rk{color:#888}.r .m{color:#888;font-size:.8rem;text-align:right}.bt{display:inline-block;padding:.5rem 1rem;background:#e84393;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:.25rem}#tp{max-height:60vh;overflow-y:auto}</style></head><body><div class=c><h1>AppMagic Crawled Data</h1><p>'+n+' apps extracted. <button class=bt onclick=\"dl(1)\">Download JSON</button> <button class=bt onclick=\"dl(0)\">Download CSV</button></p><div class=p><h2>Top Free (Downloads)</h2><div id=tf class=tp></div></div><div class=p><h2>Top Grossing (Revenue)</h2><div id=tg class=tp></div></div></div><script>var D=JSON.parse(decodeURIComponent('+JSON.stringify(encodeURIComponent(JSON.stringify(r)))+'));function dl(j){var a=document.createElement(\"a\");if(j){a.href=\"data:application/json;charset=utf-8,\"+encodeURIComponent(JSON.stringify(D,null,2));a.download=\"appmagic_crawled.json\"}else{var rows=[];(D.top_free_downloads||[]).forEach(function(x){rows.push([\"top_free_downloads\",x.rank,x.app,x.publisher,(x.metric||\"\").replace(/\\D/g,\"\"),\"downloads\"]);});(D.top_grossing_revenue||[]).forEach(function(x){rows.push([\"top_grossing_revenue\",x.rank,x.app,x.publisher,(x.metric||\"\").replace(/\\D/g,\"\"),\"revenue\"]);});a.href=\"data:text/csv;charset=utf-8,\"+encodeURIComponent(\"chart,rank,app,publisher,metric,metric_type\\n\"+rows.map(function(r){return r.join(\",\");}).join(\"\\n\"));a.download=\"appmagic_crawled.csv\"}a.click();}function esc(s){return(s||\"\").replace(/&/g,\"&amp;\").replace(/</g,\"&lt;\").replace(/>/g,\"&gt;\");}(function(){var tf=document.getElementById(\"tf\"),tg=document.getElementById(\"tg\");tf.innerHTML=(D.top_free_downloads||[]).map(function(x){return\"<div class=r><span class=rk>\"+x.rank+\"</span><span>\"+esc(x.app)+\"</span><span class=m>\"+esc(x.metric)+\"</span></div>\";}).join(\"\");tg.innerHTML=(D.top_grossing_revenue||[]).map(function(x){return\"<div class=r><span class=rk>\"+x.rank+\"</span><span>\"+esc(x.app)+\"</span><span class=m>\"+esc(x.metric)+\"</span></div>\";}).join(\"\");})();</script></body></html>';var b=new Blob([html],{type:'text/html'});window.open(URL.createObjectURL(b));})();" class="bookmarklet">📥 AppMagic Crawl</a>
+    <p class="hint">Right-click → "Add to bookmarks" if drag doesn't work.</p>
+  </div>
+
+  <div class="step">
+    <h3>Step 2: Go to AppMagic</h3>
+    <p>Open <a href="https://appmagic.rocks/top-charts/apps" target="_blank" rel="noopener">appmagic.rocks/top-charts/apps</a>, set your filters (tag, country, store, time), and wait for the charts to load.</p>
+  </div>
+
+  <div class="step">
+    <h3>Step 3: Click the bookmarklet</h3>
+    <p>While on the AppMagic page, click <strong>📥 AppMagic Crawl</strong> in your bookmarks bar. A new tab will open with the extracted data. Download JSON or CSV.</p>
+  </div>
+
+  <hr style="border-color:#333;margin:2rem 0">
+  <p><a href="appmagic_crawler_app.html">Open the full viewer</a> to load saved JSON, view demo data, or use the server-based crawler (if running).</p>
+</body>
+</html>

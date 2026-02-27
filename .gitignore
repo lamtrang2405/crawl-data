@@ -1,0 +1,6 @@
+.cursor/
+.env
+__pycache__/
+*.pyc
+appmagic_top_charts_output/
+*.egg-info/

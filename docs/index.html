@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppMagic Crawler</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d0d12; color: #e8e8ec; margin: 0; padding: 2rem; max-width: 720px; }
+    h1 { color: #e84393; font-size: 1.5rem; }
+    .card { background: #1a1a1f; padding: 1.25rem; margin: 1rem 0; border-radius: 10px; border: 1px solid rgba(232,67,147,0.2); }
+    .card h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+    .card p { margin: 0.5rem 0; font-size: 0.95rem; color: #bbb; }
+    a.btn { display: inline-block; padding: 0.75rem 1.25rem; background: #e84393; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 0.5rem 0.5rem 0 0; }
+    a.btn:hover { filter: brightness(1.1); }
+    a.btn.outline { background: transparent; border: 1px solid #e84393; }
+    .note { font-size: 0.85rem; color: #666; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <h1>AppMagic Crawler</h1>
+  <p>Extract top charts data from AppMagic. <strong>No login, no server</strong> — works entirely in your browser.</p>
+
+  <div class="card">
+    <h2>📥 Bookmarklet (recommended)</h2>
+    <p>Go to AppMagic, add the bookmarklet, click it to extract data. No setup required.</p>
+    <a href="appmagic_bookmarklet.html" class="btn">Get bookmarklet →</a>
+  </div>
+
+  <div class="card">
+    <h2>📊 Data viewer</h2>
+    <p>View, export, or load JSON files from the bookmarklet.</p>
+    <a href="appmagic_crawler_app.html" class="btn">Open viewer →</a>
+  </div>
+
+  <p class="note">Hosted on GitHub Pages. The "Crawl" button in the viewer needs a Python server — use the bookmarklet for no-server extraction.</p>
+</body>
+</html>

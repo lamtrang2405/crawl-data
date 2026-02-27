@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppMagic Top Charts – View & Reorder</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a1f;
+      --accent: #e84393;
+      --text: #e8e8ec;
+      --muted: #888;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', 'Fira Code', monospace; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; min-height: 100vh; }
+    h1 { font-size: 1.4rem; color: var(--accent); margin-bottom: 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: var(--card); border-radius: 8px; padding: 1rem 1.25rem; border: 1px solid rgba(232,67,147,0.2); }
+    .panel h2 { font-size: 0.95rem; color: var(--accent); margin: 0 0 0.75rem; }
+    .row { display: grid; grid-template-columns: 36px 1fr 140px; gap: 0.75rem; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: grab; }
+    .row:hover { background: rgba(232,67,147,0.08); }
+    .row.dragging { opacity: 0.6; }
+    .row .rank { font-weight: 600; color: var(--muted); }
+    .row .app { font-weight: 500; }
+    .row .metric { font-size: 0.8rem; color: var(--muted); }
+    button { background: var(--accent); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.9rem; margin-top: 0.75rem; }
+    button:hover { filter: brightness(1.1); }
+    .screenshot { max-width: 100%; border-radius: 6px; margin-top: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>AppMagic Top Charts</h1>
+  <p class="meta">Source: <a href="https://appmagic.rocks/top-charts/apps" target="_blank" rel="noopener">appmagic.rocks/top-charts/apps</a> · Drag rows to reorder, then Export CSV</p>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Top Free (Downloads)</h2>
+      <div id="topFree"></div>
+    </div>
+    <div class="panel">
+      <h2>Top Grossing (Revenue)</h2>
+      <div id="topGrossing"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top: 1rem;">
+    <button id="exportBtn">Export reordered CSV</button>
+    <button id="loadBtn" style="background:#333;margin-left:0.5rem">Load from JSON</button>
+    <input type="file" id="fileInput" accept=".json" class="hidden">
+  </div>
+
+  <div class="panel" style="margin-top: 1rem;">
+    <h2>Screenshot</h2>
+    <img id="screenshot" class="screenshot hidden" alt="Top charts screenshot">
+    <p id="noScreenshot" class="meta">No screenshot found. Run crawl_appmagic_top_charts.py with Playwright.</p>
+  </div>
+
+  <script>
+    const DATA = {"meta":{"source":"https://appmagic.rocks/top-charts/apps","crawled_at":"2025-02-26"},"top_free_downloads":[{"rank":1,"app":"ChatGPT","publisher":"OpenAI OpCo, LLC","metric":">50,000,000","metric_type":"downloads"},{"rank":2,"app":"TikTok - Videos, Shop & LIVE","publisher":"Bytedance","metric":">20,000,000","metric_type":"downloads"},{"rank":3,"app":"Instagram","publisher":"Instagram (Meta)","metric":">20,000,000","metric_type":"downloads"},{"rank":4,"app":"Google Gemini","publisher":"Google","metric":">20,000,000","metric_type":"downloads"},{"rank":5,"app":"Facebook","publisher":"Meta Platforms, Inc.","metric":">20,000,000","metric_type":"downloads"},{"rank":6,"app":"FreeReels - Dramas & Reels","publisher":"SKYWORK AI PTE.LTD.","metric":">20,000,000","metric_type":"downloads"},{"rank":7,"app":"CapCut: Photo & Video Editor","publisher":"Bytedance","metric":">20,000,000","metric_type":"downloads"},{"rank":8,"app":"WhatsApp Messenger","publisher":"WhatsApp LLC (Meta)","metric":">20,000,000","metric_type":"downloads"},{"rank":9,"app":"Cici - Your helpful friend","publisher":"Bytedance","metric":">20,000,000","metric_type":"downloads"},{"rank":10,"app":"Block Blast!","publisher":"HungryStudio","metric":">20,000,000","metric_type":"downloads"}],"top_grossing_revenue":[{"rank":1,"app":"TikTok - Videos, Shop & LIVE","publisher":"Bytedance","metric":">$200,000,000","metric_type":"revenue"},{"rank":2,"app":"ChatGPT","publisher":"OpenAI OpCo, LLC","metric":">$200,000,000","metric_type":"revenue"},{"rank":3,"app":"Google One","publisher":"Google","metric":">$100,000,000","metric_type":"revenue"},{"rank":4,"app":"YouTube","publisher":"Google","metric":">$100,000,000","metric_type":"revenue"},{"rank":5,"app":"Last War:Survival","publisher":"FUNFLY PTE. LTD.","metric":">$100,000,000","metric_type":"revenue"},{"rank":6,"app":"Honor of Kings","publisher":"Tencent","metric":">$100,000,000","metric_type":"revenue"},{"rank":7,"app":"PUBG MOBILE","publisher":"Tencent","metric":">$100,000,000","metric_type":"revenue"},{"rank":8,"app":"Royal Match","publisher":"Dream Games","metric":">$50,000,000","metric_type":"revenue"},{"rank":9,"app":"Whiteout Survival","publisher":"Century Games","metric":">$50,000,000","metric_type":"revenue"},{"rank":10,"app":"Roblox","publisher":"Roblox Corporation","metric":">$50,000,000","metric_type":"revenue"}]};
+
+    let state = { topFree: [...DATA.top_free_downloads], topGrossing: [...DATA.top_grossing_revenue] };
+
+    function render(el, items, chart) {
+      el.innerHTML = items.map((r, i) => `
+        <div class="row" data-chart="${chart}" data-i="${i}" draggable="true">
+          <span class="rank">${i + 1}</span>
+          <span class="app">${r.app}</span>
+          <span class="metric">${r.metric}</span>
+        </div>
+      `).join('');
+      el.querySelectorAll('.row').forEach(row => {
+        row.addEventListener('dragstart', onDragStart);
+        row.addEventListener('dragover', onDragOver);
+        row.addEventListener('drop', onDrop);
+      });
+    }
+
+    let dragged = null, dragParent = null, dragChart = null, dragIdx = null;
+    function onDragStart(e) {
+      dragged = e.target.closest('.row');
+      if (!dragged) return;
+      dragged.classList.add('dragging');
+      dragParent = dragged.parentNode;
+      dragChart = dragged.dataset.chart;
+      dragIdx = +dragged.dataset.i;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragIdx);
+    }
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+    function onDrop(e) {
+      e.preventDefault();
+      const row = e.target.closest('.row');
+      if (!row || !dragged || row === dragged) { endDrag(); return; }
+      if (row.parentNode !== dragParent) { endDrag(); return; }
+      const idx = +row.dataset.i;
+      const arr = dragChart === 'top_free' ? state.topFree : state.topGrossing;
+      const item = arr.splice(dragIdx, 1)[0];
+      arr.splice(idx, 0, item);
+      state[dragChart === 'top_free' ? 'topFree' : 'topGrossing'] = arr;
+      render(dragParent, arr, dragChart);
+      endDrag();
+    }
+    function endDrag() {
+      if (dragged) dragged.classList.remove('dragging');
+      dragged = null; dragParent = null; dragChart = null; dragIdx = null;
+    }
+    document.addEventListener('dragend', endDrag);
+
+    function syncFromDOM() {
+      const free = [...document.getElementById('topFree').children].map((r, i) => {
+        const app = r.querySelector('.app').textContent;
+        const metric = r.querySelector('.metric').textContent;
+        const orig = state.topFree.find(x => x.app === app) || {};
+        return { ...orig, rank: i + 1, app, metric };
+      });
+      const gross = [...document.getElementById('topGrossing').children].map((r, i) => {
+        const app = r.querySelector('.app').textContent;
+        const metric = r.querySelector('.metric').textContent;
+        const orig = state.topGrossing.find(x => x.app === app) || {};
+        return { ...orig, rank: i + 1, app, metric };
+      });
+      state.topFree = free; state.topGrossing = gross;
+    }
+
+    function exportCSV() {
+      syncFromDOM();
+      const rows = [
+        ...state.topFree.map(r => ['top_free_downloads', r.rank, r.app, r.publisher, r.metric.replace(/\D/g,''), 'downloads']),
+        ...state.topGrossing.map(r => ['top_grossing_revenue', r.rank, r.app, r.publisher, r.metric.replace(/\D/g,''), 'revenue'])
+      ];
+      const csv = 'chart,rank,app,publisher,metric,metric_type\n' + rows.map(r => r.join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = 'appmagic_top_charts_reordered.csv';
+      a.click();
+    }
+
+    document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const d = JSON.parse(r.result);
+          state.topFree = d.top_free_downloads || [];
+          state.topGrossing = d.top_grossing_revenue || [];
+          render(document.getElementById('topFree'), state.topFree, 'top_free');
+          render(document.getElementById('topGrossing'), state.topGrossing, 'top_grossing');
+        } catch (err) { alert('Invalid JSON'); }
+      };
+      r.readAsText(f);
+    };
+    document.getElementById('exportBtn').onclick = exportCSV;
+
+    render(document.getElementById('topFree'), state.topFree, 'top_free');
+    render(document.getElementById('topGrossing'), state.topGrossing, 'top_grossing');
+
+    // Check for screenshot
+    const ss = document.getElementById('screenshot');
+    const noSs = document.getElementById('noScreenshot');
+    fetch('appmagic_top_charts_output/appmagic_top_charts_screenshot.png').then(r => {
+      if (r.ok) { ss.src = 'appmagic_top_charts_output/appmagic_top_charts_screenshot.png'; ss.classList.remove('hidden'); noSs.classList.add('hidden'); }
+    }).catch(() => {});
+  </script>
+</body>
+</html>
