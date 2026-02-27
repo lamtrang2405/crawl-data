@@ -3,3 +3,4 @@ services:
     name: appmagic-crawler
     runtime: docker
     dockerfilePath: ./Dockerfile
+    dockerContext: .

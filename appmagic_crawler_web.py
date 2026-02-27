@@ -20,6 +20,14 @@ from flask import Flask, request, jsonify, send_file, render_template_string, Re
 app = Flask(__name__)
 
 
+@app.after_request
+def _cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
+
 def _parse_filters_from_url(url: str) -> dict:
     try:
         qs = parse_qs(urlparse(url).query)
@@ -148,9 +156,14 @@ def parse_metric(val: str) -> str:
     return re.sub(r"[^\d]", "", val)
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return render_template_string(HTML_TEMPLATE)
+
+
+@app.route("/crawl", methods=["OPTIONS"])
+def crawl_options():
+    return "", 204
 
 
 @app.route("/crawl", methods=["POST"])
@@ -313,10 +326,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
   <div class="container">
     <h1>AppMagic Crawler</h1>
-    <p class="sub">Paste any AppMagic top-charts link below and click Crawl. No login, no bookmark — just paste and fetch.</p>
+    <p class="sub">Paste an AppMagic link, click Crawl, get data. Export JSON or CSV.</p>
 
     <div class="input-row">
-      <input type="url" id="urlInput" placeholder="Paste AppMagic URL here (e.g. https://appmagic.rocks/top-charts/apps?tag=37)" value="">
+      <input type="url" id="urlInput" placeholder="https://appmagic.rocks/top-charts/apps?tag=37" value="">
       <button id="crawlBtn">Crawl</button>
     </div>
     <div class="filters">
@@ -508,7 +521,4 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="127.0.0.1", port=5000, debug=True)

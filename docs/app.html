@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppMagic Crawler</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #0d0d12 0%, #1a1a24 100%); color: #e8e8ec; margin: 0; min-height: 100vh; padding: 2rem; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; color: #e84393; margin-bottom: 0.25rem; }
+    .sub { font-size: 0.9rem; color: #888; margin-bottom: 1rem; }
+    .input-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    input[type="url"] { flex: 1; min-width: 200px; padding: 0.75rem 1rem; border: 1px solid rgba(232,67,147,0.3); border-radius: 8px; background: #1a1a1f; color: #fff; font-size: 0.95rem; }
+    input[type="url"]:focus { outline: none; border-color: #e84393; }
+    button { padding: 0.75rem 1.5rem; background: #e84393; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; white-space: nowrap; }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .filters { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: #1a1a1f; border: 1px solid rgba(232,67,147,0.2); border-radius: 8px; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .filter-group label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+    .filter-group select { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: #0d0d12; color: #e8e8ec; font-size: 0.9rem; min-width: 140px; }
+    .status { font-size: 0.9rem; color: #888; margin-bottom: 1rem; min-height: 1.2em; }
+    .error { color: #ff6b6b; }
+    .results { display: none; }
+    .results.visible { display: block; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: #1a1a1f; border: 1px solid rgba(232,67,147,0.2); border-radius: 10px; padding: 1rem 1.25rem; }
+    .panel h2 { font-size: 1rem; color: #e84393; margin: 0 0 0.75rem; }
+    #topFreePanel, #topGrossingPanel { max-height: 70vh; overflow-y: auto; }
+    .row { display: grid; grid-template-columns: 36px 1fr 100px; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.9rem; }
+    .row .rank { color: #888; font-weight: 600; }
+    .row .metric { color: #888; font-size: 0.8rem; text-align: right; }
+    .screenshot { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
+    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button { background: #333; }
+    .actions button.primary { background: #e84393; }
+    .setup { background: #1a2a1a; border: 1px solid rgba(100,200,100,0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .setup a { color: #6cf; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AppMagic Crawler</h1>
+    <p class="sub">Paste an AppMagic top-charts link, click Crawl, get data. Export JSON or CSV.</p>
+
+    <div id="setupMsg" class="setup" style="display:none;">
+      <strong>Backend needed.</strong> <a href="https://render.com/deploy?repo=https://github.com/lamtrang2405/crawl-data" target="_blank">Deploy free on Render</a> → get your URL → paste it below. Or run locally: <code>python appmagic_crawler_web.py</code>
+      <div style="margin-top:0.5rem;">
+        <input type="url" id="apiInput" placeholder="https://your-app.onrender.com" style="width:100%;max-width:400px;padding:0.5rem;background:#0d0d12;border:1px solid #333;color:#fff;border-radius:6px;">
+        <button onclick="setApi()" style="margin-left:0.5rem;padding:0.5rem 1rem;background:#e84393;color:#fff;border:none;border-radius:6px;cursor:pointer">Use this backend</button>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://appmagic.rocks/top-charts/apps?tag=37" value="">
+      <button id="crawlBtn">Crawl</button>
+    </div>
+    <div class="filters">
+      <div class="filter-group"><label>Time</label><select id="aggregation"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="quarter" selected>Quarter</option><option value="year">Year</option></select></div>
+      <div class="filter-group"><label>Country</label><select id="country"><option value="W1">Worldwide</option><option value="US,W1">US + Worldwide</option><option value="US">US</option><option value="GB">UK</option><option value="DE">DE</option><option value="JP">JP</option></select></div>
+      <div class="filter-group"><label>Store</label><select id="store"><option value="">All</option><option value="1">Android</option><option value="4" selected>iOS</option></select></div>
+      <div class="filter-group"><label>Limit</label><select id="limit"><option value="50">50</option><option value="100">100</option><option value="500" selected>500</option><option value="1000">1000</option></select></div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="results" id="results">
+      <div class="grid">
+        <div class="panel" id="topFreePanel"><h2>Top Free (Downloads)</h2><div id="topFree"></div></div>
+        <div class="panel" id="topGrossingPanel"><h2>Top Grossing (Revenue)</h2><div id="topGrossing"></div></div>
+      </div>
+      <div class="panel" style="margin-top:1rem;"><h2>Screenshot</h2><img id="screenshot" class="screenshot" style="display:none;"></div>
+      <div class="actions"><button class="primary" id="exportJson">Export JSON</button><button id="exportCsv">Export CSV</button></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'appmagic_api_url';
+    function getApi() {
+      const params = new URLSearchParams(location.search);
+      if (params.get('api')) return params.get('api').replace(/\/$/, '');
+      return localStorage.getItem(STORAGE_KEY) || '';
+    }
+    function setApi() {
+      const u = document.getElementById('apiInput').value.trim();
+      if (u) { localStorage.setItem(STORAGE_KEY, u); location.reload(); }
+    }
+
+    let API = getApi();
+    const isSameOrigin = () => !API || location.port === '5000' || location.hostname === '127.0.0.1';
+    if (isSameOrigin()) API = '';  // use relative URLs when on the Flask app
+    const API_BASE = API || '';
+
+    const onGitHubPages = location.hostname.includes('github.io') || location.protocol === 'file:';
+    if (onGitHubPages && !API) { document.getElementById('setupMsg').style.display = 'block'; }
+
+    const urlInput = document.getElementById('urlInput'), crawlBtn = document.getElementById('crawlBtn');
+    const status = document.getElementById('status'), results = document.getElementById('results');
+    const aggregationEl = document.getElementById('aggregation'), countryEl = document.getElementById('country'), storeEl = document.getElementById('store'), limitEl = document.getElementById('limit');
+    let lastData = null;
+
+    function buildUrl() {
+      let url = urlInput.value.trim();
+      if (!url || !url.includes('appmagic.rocks') || !url.includes('top-charts')) return null;
+      try { const u = new URL(url); u.searchParams.set('aggregation', aggregationEl.value || 'month'); u.searchParams.set('country', countryEl.value || 'W1'); if (storeEl.value) u.searchParams.set('store', storeEl.value); return u.toString(); } catch { return url; }
+    }
+
+    crawlBtn.onclick = async () => {
+      const url = buildUrl();
+      if (!url) { status.textContent = 'Paste a valid AppMagic top-charts URL'; status.classList.add('error'); return; }
+      if (!API_BASE && !isSameOrigin()) { status.textContent = 'Set your backend URL first (see above)'; status.classList.add('error'); return; }
+      status.textContent = 'Crawling... (10–30 sec)';
+      status.classList.remove('error');
+      crawlBtn.disabled = true;
+      try {
+        const res = await fetch(API_BASE + '/crawl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, limit: parseInt(limitEl.value, 10) || 500 }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Crawl failed');
+        lastData = data;
+        const tf = document.getElementById('topFree'), tg = document.getElementById('topGrossing');
+        const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        tf.innerHTML = (data.top_free_downloads || []).map(r => `<div class="row"><span class="rank">${r.rank}</span><span>${esc(r.app)}</span><span class="metric">${esc(r.metric)}</span></div>`).join('');
+        tg.innerHTML = (data.top_grossing_revenue || []).map(r => `<div class="row"><span class="rank">${r.rank}</span><span>${esc(r.app)}</span><span class="metric">${esc(r.metric)}</span></div>`).join('');
+        const ss = document.getElementById('screenshot');
+        if (data.meta?.screenshot) { ss.src = API_BASE + '/screenshot/' + encodeURIComponent(data.meta.screenshot); ss.style.display = 'block'; } else ss.style.display = 'none';
+        results.classList.add('visible');
+        status.textContent = 'Done. ' + ((data.top_free_downloads?.length || 0) + (data.top_grossing_revenue?.length || 0)) + ' apps.';
+      } catch (e) {
+        status.textContent = 'Error: ' + e.message + '. Is the backend running?';
+        status.classList.add('error');
+      }
+      crawlBtn.disabled = false;
+    };
+
+    document.getElementById('exportJson').onclick = () => {
+      if (!lastData) return;
+      const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(lastData, null, 2)); a.download = 'appmagic_crawled.json'; a.click();
+    };
+    document.getElementById('exportCsv').onclick = () => {
+      if (!lastData) return;
+      const rows = [...(lastData.top_free_downloads || []).map(r => ['top_free_downloads', r.rank, r.app, r.publisher, (r.metric||'').replace(/\D/g,''), 'downloads']), ...(lastData.top_grossing_revenue || []).map(r => ['top_grossing_revenue', r.rank, r.app, r.publisher, (r.metric||'').replace(/\D/g,''), 'revenue'])];
+      const csv = 'chart,rank,app,publisher,metric,metric_type\n' + rows.map(r => r.join(',')).join('\n');
+      const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'appmagic_crawled.csv'; a.click();
+    };
+
+    urlInput.addEventListener('blur', () => {
+      const u = urlInput.value.trim();
+      if (!u) return;
+      try { const p = new URL(u); if (p.searchParams.get('aggregation')) aggregationEl.value = p.searchParams.get('aggregation'); if (p.searchParams.get('country')) countryEl.value = p.searchParams.get('country').split(',')[0]; if (p.searchParams.get('store')) storeEl.value = p.searchParams.get('store'); } catch(_){}
+    });
+  </script>
+</body>
+</html>
