@@ -313,10 +313,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
   <div class="container">
     <h1>AppMagic Crawler</h1>
-    <p class="sub">Paste an AppMagic top-charts URL (or base + tag) and set filters. Click Crawl to fetch rankings.</p>
+    <p class="sub">Paste any AppMagic top-charts link below and click Crawl. No login, no bookmark — just paste and fetch.</p>
 
     <div class="input-row">
-      <input type="url" id="urlInput" placeholder="https://appmagic.rocks/top-charts/apps?tag=37" value="">
+      <input type="url" id="urlInput" placeholder="Paste AppMagic URL here (e.g. https://appmagic.rocks/top-charts/apps?tag=37)" value="">
       <button id="crawlBtn">Crawl</button>
     </div>
     <div class="filters">
@@ -508,4 +508,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)
